@@ -1,0 +1,189 @@
+P16 assembler v1.4.0 (Mar  6 2023)	c:\Coisas uni\AC\lab01\char2nat_test.lst	Mon Mar 27 18:45:35 2023
+
+Sections
+Index   Name            Address   Size
+0       .startup        0000      0012 18
+1       .text           0012      0066 102
+2       .data           0078      001F 31
+3       .stack          0098      0040 64
+
+Symbols
+Name                    Type      Value       Section
+_start                  LABEL     0004 4      .startup
+addr_main               LABEL     000E 14     .startup
+addr_stack_top          LABEL     0010 16     .startup
+char2nat                LABEL     0040 64     .text
+char2nat_elsif          LABEL     0054 84     .text
+char2nat_end            LABEL     0070 112    .text
+char2nat_if             LABEL     0066 102    .text
+char2nat_test           LABEL     0018 24     .text
+char2nat_test_loop      LABEL     0026 38     .text
+line#20                 LABEL     0002 2      .startup
+line#26                 LABEL     000C 12     .startup
+main                    LABEL     0012 18     .text
+NAN                     LABEL     0078 120    .data
+radix_test              LABEL     0089 137    .data
+radix_test_addr         LABEL     003E 62     .text
+radix_test_end          LABEL     0097 151    .data
+set_nan                 LABEL     0074 116    .text
+STACK_SIZE              ABSOLUTE  00B8 184    .data
+stack_top               LABEL     00D8 216    .stack
+symbol_test             LABEL     007A 122    .data
+symbol_test_addr        LABEL     003C 60     .text
+symbol_test_end         LABEL     0089 137    .data
+
+Code listing
+   1           	/*
+   2           		Respostas 
+   3           		1. 
+   4           		a) - Ocupa 18 bytes. Na arquitetura do processador P16 cada instrução ocupa 2 bytes em memoria, já que a rotina multiply tem 9 instruções, 9x2 = 18 bytes 
+   5           		b) = De acordo com as convenções de uso do processador P16 os registos R0 a R3 podem ser alterados no corpo da função, enquanto os registos R4 a R12 devem ser 
+   6           		preservados em memoria antes de utilizados de forma a reterem os valores que tinham antes da chamada da função depois do retorno da mesma, e como têm que ser preservados,
+   7           		devem ser utilizados apenas após os registos R0 a R3 terem sido esgotados. Tendo isto em conta, o uso de R2 em vez de R4 é mais apropriado na implementação desta rotina.
+   8           	
+   9           		2.
+  10           		a) Tendo em conta que a constante NAN é o maior valor possível de codificar numa variável sem sinal a 16 bits, o valor de NAN será 0xFFFF em hexadecimal ou 65535 em decimal
+  11           		b) Uma possível definição de NAN é NAN: .word 65535 ,Os requisitos de memória seriam a alocação de um espaço de 2 bytes de memória e a a inicialização desse espaço com o valor 0xFFFF
+  12           	
+  13           	
+  14           	
+  15           		*/
+  16           	
+  17           		.section .startup
+  18           		
+  19 0000 01 58		b		_start	
+  20 0002 FF 5B		b 		.	    
+  21           	_start:
+  22 0004 5D 0C		ldr		sp, addr_stack_top
+  23 0006 80 B7		mov		r0, pc
+  24 0008 0E A2		add		lr, r0, #4
+  25 000A 1F 0C		ldr		pc, addr_main
+  26 000C FF 5B		b		.
+  27           	addr_main:
+  28 000E 12 00		.word main
+  29           	addr_stack_top:
+  30 0010 D8 00		.word stack_top
+  31           	
+  32           	
+  33           	
+  34           	
+  35           	
+  36           		
+  37           		.text
+  38           		; sec��o com c�digo aplicacional
+  39           	main:
+  40 0012 0E 24	    push lr
+  41 0014 01 5C		bl char2nat_test 
+  42 0016 0F 04		pop pc
+  43           		/*
+  44           		uint16_t char2nat ( char symbol , uint16_t radix ) {
+  45           	
+  46           	 	uint16_t number = NAN ;
+  47           	
+  48           		if ( symbol >= '0 ' && symbol <= '9 ' ) {
+  49           			number = symbol - '0 ';
+  50           		} 	else if ( symbol >= 'A ' && symbol <= 'F ' ) {
+  51           	 			number = symbol - 'A ' + 10;
+  52           	 	}
+  53           		if ( radix > 16 || number >= radix ) {
+  54           	 			number = NAN ;
+  55           	 	}
+  56           	 	return number ;
+  57           	 	} */
+  58           		
+  59           	
+  60           	char2nat_test:
+  61 0018 0E 24		push	lr
+  62 001A 04 24		push 	r4
+  63 001C 05 24		push 	r5
+  64 001E 06 24	    push    r6
+  65 0020 D4 0C		ldr     r4, symbol_test_addr
+  66 0022 D5 0C		ldr 	r5, radix_test_addr
+  67 0024 F7 60	    mov     r7, #symbol_test_end-symbol_test
+  68           	char2nat_test_loop:
+  69 0026 40 08		ldrb	r0, [r4]	
+  70 0028 51 08	    ldrb	r1, [r5]
+  71 002A 0A 5C		bl 		char2nat
+  72 002C C4 A0		add		r4, r4, #1
+  73 002E D5 A0		add		r5, r5, #1
+  74 0030 F7 A8		sub		r7, r7, #1
+  75 0032 F9 47		bzc		char2nat_test_loop
+  76 0034 06 04	    pop     r6
+  77 0036 05 04		pop 	r5
+  78 0038 04 04		pop 	r4
+  79 003A 0F 04		pop		pc
+  80           	
+  81           	symbol_test_addr:
+  82 003C 7A 00	    .word symbol_test
+  83           	radix_test_addr:
+  84 003E 89 00	    .word radix_test
+  85           		;r0 = symbol
+  86           		;r1 = radix
+  87           	char2nat:
+  88 0040 B2 0D		ldr		r2, NAN			            ; r2 = number = NAN
+  89 0042 03 63		mov 	r3,	#'0'					; r3 = '0' (registo para valores temporários)
+  90 0044 80 B9		cmp     r0, r3					
+  91 0046 06 48		blo 	char2nat_elsif 				; if symbol >= '0'
+  92 0048 93 63		mov 	r3,	#'9'					; r3 = '9'
+  93 004A 30 B8		cmp 	r3, r0						; if symbol <= '9'
+  94 004C 03 48		blo     char2nat_elsif		
+  95 004E 03 63		mov 	r3,	#'0'		
+  96 0050 82 89		sub 	r2, r0, r3					; number = symbol - '0'
+  97 0052 09 58		b       char2nat_if
+  98           	char2nat_elsif:
+  99 0054 13 64		mov 	r3,	#'A'	
+ 100 0056 80 B9		cmp     r0, r3 						
+ 101 0058 06 48		blo     char2nat_if					; if symbol >= 'A'
+ 102 005A 63 64		mov 	r3,	#'F'	
+ 103 005C 30 B8		cmp     r3, r0
+ 104 005E 03 48		blo 	char2nat_if					; if symbol <= 'F'
+ 105 0060 13 64	    mov     r3,  #'A'
+ 106 0062 82 89		sub     r2, r0, r3
+ 107 0064 22 A5	    add     r2, r2, #10					; number = symbol - 'A' + 10
+ 108           	char2nat_if:
+ 109 0066 03 61	    mov 	r3, #16
+ 110 0068 B0 B8	    cmp     r3, r1
+ 111 006A 04 48		blo     set_nan  					; if radix > 16
+ 112 006C A0 B8		cmp 	r2, r1
+ 113 006E 02 4C		bhs     set_nan						; if number >= radix
+ 114           	char2nat_end:
+ 115 0070 00 B1		mov 	r0, r2						; return number
+ 116 0072 0F B7		mov 	pc, lr
+ 117           	set_nan: 
+ 118 0074 12 0C		ldr 	r2, NAN
+ 119 0076 FC 5B		b char2nat_end 
+ 120           	
+ 121           	
+ 122           	
+ 123           	
+ 124           	
+ 125           		.data
+ 126           		; sec��o com dados globais iniciados
+ 127           	NAN:
+ 128 0078 FF FF	     .word 65535
+ 129           	     
+ 130          	symbol_test: .byte  'A', 'B', 'C', 'D', 'E', 'C', '6','5','4','0','1','2', 'A', '2', '0'
+ 130 007A 41 42 43 44 45 43 36 35 34 30 31 32 41 32 30
+ 131           	symbol_test_end:
+ 132           	
+ 133          	radix_test: .byte 16, 16, 16, 16, 10, 16, 2, 10, 2, 10, 16, 122, 142, 142
+ 133 0089 10 10 10 10 0A 10 02 0A 02 0A 10 7A 8E 8E
+ 134           	radix_test_end:
+ 135           	
+ 136           	
+ 137           	
+ 138           	
+ 139           	
+ 140           		;.section .bss
+ 141           		; sec��o com dados globais n�o iniciados
+ 142           		
+ 143          		.equ STACK_SIZE, 64
+ 144           	
+ 145           	
+ 146           	
+ 147           		.section .stack
+ 148           		; sec��o stack para armazenamento de dados tempor�rios
+ 149 0098 00   		.space	STACK_SIZE
+ 149 .... ..
+ 149 00D7 00
+ 150           	stack_top:
